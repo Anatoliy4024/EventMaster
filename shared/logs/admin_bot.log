@@ -1,0 +1,19 @@
+2024-08-29 23:15:06,700 - telegram.ext._application - INFO - Application started
+2024-08-29 23:16:28,751 - root - ERROR - Ошибка парсинга номера проформы: 45788999000
+2024-08-29 23:16:28,752 - telegram.ext._application - ERROR - No error handlers are registered, logging exception.
+Traceback (most recent call last):
+  File "C:\Users\USER\PycharmProjects\EventMaster\.venv\Lib\site-packages\telegram\ext\_application.py", line 1063, in process_update
+    await coroutine
+  File "C:\Users\USER\PycharmProjects\EventMaster\.venv\Lib\site-packages\telegram\ext\_handler.py", line 141, in handle_update
+    return await self.callback(update, context)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\USER\PycharmProjects\EventMaster\bot\admin_bot\main.py", line 195, in handle_irina_input
+    order_info = get_full_proforma(user_id, session_number)
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\USER\PycharmProjects\EventMaster\bot\admin_bot\helpers\database_helpers.py", line 22, in get_full_proforma
+    conn = sqlite3.connect(DATABASE_PATH)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+sqlite3.OperationalError: unable to open database file
+2024-08-29 23:17:00,302 - telegram.ext._application - INFO - Application is stopping. This might take a moment.
+2024-08-29 23:17:00,302 - telegram.ext._application - INFO - Application.stop() complete
+2024-08-29 23:17:19,919 - telegram.ext._application - INFO - Application started
