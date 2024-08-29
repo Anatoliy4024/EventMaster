@@ -1,7 +1,8 @@
 # shared/config.py
 
 # Путь к базе данных
-DATABASE_PATH = 'shared/db/sqlite.db'  # Относительный путь к базе данных, соответствует текущей структуре проекта
+#DATABASE_PATH = 'shared/db/sqlite.db'  # Относительный путь к базе данных, соответствует текущей структуре проекта
+DATABASE_PATH = r'C:\Users\USER\PycharmProjects\sandbox_project\sqlite.db'# Старый путь к базе данных, соответствует текущей структуре проекта
 
 # Токен бота
 BOT_TOKEN = '7495955549:AAGG0PQNvFC-SN0PO4rx0WVi2HEeIM8mnVg'
