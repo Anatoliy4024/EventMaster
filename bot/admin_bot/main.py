@@ -28,18 +28,6 @@ logger.info("Логирование настроено с поддержкой U
 ORDER_STATUS_REVERSE = {v: k for k, v in ORDER_STATUS.items()}
 
 
-# ORDER_STATUS_REVERSE = {v: k for k, v in ORDER_STATUS.items()}
-#
-# # Логирование
-# logging.basicConfig(
-#     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-#     level=logging.INFO,
-#     filename=r'C:\Users\USER\PycharmProjects\EventMaster\shared\logs\admin_bot.log'
-#     )
-# logger = logging.getLogger(__name__)
-
-
-
 # Обработчик для команды /start
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user = update.message.from_user
@@ -55,6 +43,8 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     context.user_data['language_message_id'] = message.message_id
 
 # Обработчик нажатий на кнопки (включая выбор языка)
+# Обработчик нажатий на кнопки (включая выбор языка)
+# Обработчик нажатий на кнопки (включая выбор языка)
 async def button_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
     await query.answer()
@@ -64,11 +54,34 @@ async def button_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
         language_code = query.data.split('_')[1]
         context.user_data['language'] = language_code
 
-        # После выбора языка показываем основные опции
-        await query.message.reply_text(
-            "Choose your option:",
+        # Удаляем предыдущие сообщения с опциями, если они есть
+        options_message_id = context.user_data.get('options_message_id')
+        if options_message_id:
+            try:
+                await context.bot.delete_message(chat_id=query.message.chat_id, message_id=options_message_id)
+            except Exception as e:
+                logger.error(f"Error deleting options message: {e}")
+
+        # Заголовок в зависимости от выбранного языка
+        headers = {
+            'en': "Choose your option:",
+            'ru': "Выберите действие:",
+            'es': "Elige una opción:",
+            'fr': "Choisissez une option:",
+            'uk': "Виберіть дію:",
+            'pl': "Wybierz opcję:",
+            'de': "Wählen Sie eine Option:",
+            'it': "Scegli un'opzione:"
+        }
+
+        # Отправляем новые кнопки с текстом на выбранном языке
+        new_options_message = await query.message.reply_text(
+            headers.get(language_code, "Choose your option:"),
             reply_markup=user_options_keyboard(language_code, update.effective_user.id)
         )
+
+        # Сохраняем ID сообщения с новыми опциями
+        context.user_data['options_message_id'] = new_options_message.message_id
 
 # Основной блок запуска бота
 if __name__ == '__main__':
