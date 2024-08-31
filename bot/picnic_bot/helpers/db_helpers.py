@@ -1,10 +1,8 @@
 # bot/picnic_bot/helpers/db_helpers.py
 
-import os
 import sqlite3  # для работы с SQLite
 import logging  # для логирования
-from shared.config import DATABASE_PATH, LOG_FILE_PATH  # путь к базе данных и лог-файлу
-from abstract_functions import create_connection
+from shared.helpers import create_connection  # функция для создания соединения с базой данных
 from shared.config import DATABASE_PATH
 
 def picnic_db_operations(user_id, session_number, update_data=None):

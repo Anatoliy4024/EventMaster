@@ -1,3 +1,5 @@
+# shared/database_logger.py
+
 import logging
 import sqlite3
 
