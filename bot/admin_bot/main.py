@@ -1,17 +1,17 @@
+# bot/admin_bot/main.py
+import os
 import sqlite3
 import logging
 from telegram import Update
 from telegram.ext import ContextTypes, ApplicationBuilder, CommandHandler, CallbackQueryHandler, MessageHandler, filters
 from shared.config import DATABASE_PATH, BOT_TOKEN, IRA_CHAT_ID, ADMIN_CHAT_ID  # Импортируем ID ДЛЯ СЦЕНАРИЯ ИРИНА И СЕРВИС
 from shared.constants import UserData, ORDER_STATUS
-from helpers.database_helpers import send_proforma_to_user, get_full_proforma, get_latest_session_number
+from bot.admin_bot.helpers.database_helpers import send_proforma_to_user, get_full_proforma, get_latest_session_number
 from bot.admin_bot.keyboards.admin_keyboards import user_options_keyboard, irina_service_menu, service_menu_keyboard
 from shared.translations import language_selection_keyboard
 
 ORDER_STATUS_REVERSE = {v: k for k, v in ORDER_STATUS.items()}
 
-import os
-import logging
 
 # Определяем путь к файлу лога
 log_dir = r'C:\Users\USER\PycharmProjects\EventMaster\bot\admin_bot\helpers\logs'
@@ -160,10 +160,21 @@ async def button_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
             logger.error(f"Ошибка при получении информации о пользователе: {str(e)}")
             await query.message.reply_text("Произошла ошибка при попытке получить информацию о пользователе.")
 
-# Основной блок
-if __name__ == '__main__':
+
+async def run_bot1():
     application = ApplicationBuilder().token(BOT_TOKEN).build()
 
     application.add_handler(CommandHandler('start', start))
     application.add_handler(CallbackQueryHandler(button_callback))
-    application.run_polling()
+
+    await application.start()  # Асинхронный запуск приложения
+    await application.updater.start_polling()  # Асинхронный запуск polling
+
+    print("Bot1 started")
+
+    # Ждем завершения polling
+    await application.updater.wait()
+
+    # Остановка приложения
+    await application.stop()
+    await application.shutdown()

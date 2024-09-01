@@ -1,14 +1,12 @@
-# shared/database_logger.py
-
 import logging
 import sqlite3
 
-# Настройка логирования
+# ��������� �����������
 logging.basicConfig(
     filename='db_operations.log',
     format='%(asctime)s - %(levelname)s - %(message)s',
     level=logging.INFO,
-    encoding='utf-8'  # Добавьте эту строку для установки кодировки UTF-8
+    encoding='utf-8' 
 )
 
 def log_message(message):

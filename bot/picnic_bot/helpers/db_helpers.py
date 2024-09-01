@@ -1,17 +1,17 @@
 # bot/picnic_bot/helpers/db_helpers.py
 
-import sqlite3  # для работы с SQLite
-import logging  # для логирования
-from shared.helpers import create_connection  # функция для создания соединения с базой данных
+import sqlite3  # РґР»СЏ СЂР°Р±РѕС‚С‹ СЃ SQLite
+import logging  # РґР»СЏ Р»РѕРіРёСЂРѕРІР°РЅРёСЏ
+from shared.helpers import create_connection  # С„СѓРЅРєС†РёСЏ РґР»СЏ СЃРѕР·РґР°РЅРёСЏ СЃРѕРµРґРёРЅРµРЅРёСЏ СЃ Р±Р°Р·РѕР№ РґР°РЅРЅС‹С…
 from shared.config import DATABASE_PATH
 
 def picnic_db_operations(user_id, session_number, update_data=None):
     """
-    Основная функция для выполнения операций с базой данных в PicnicBot.
+    РћСЃРЅРѕРІРЅР°СЏ С„СѓРЅРєС†РёСЏ РґР»СЏ РІС‹РїРѕР»РЅРµРЅРёСЏ РѕРїРµСЂР°С†РёР№ СЃ Р±Р°Р·РѕР№ РґР°РЅРЅС‹С… РІ PicnicBot.
 
-    :param user_id: Идентификатор пользователя Telegram.
-    :param session_number: Номер текущей сессии пользователя.
-    :param update_data: Словарь с данными для обновления (если требуется).
+    :param user_id: РРґРµРЅС‚РёС„РёРєР°С‚РѕСЂ РїРѕР»СЊР·РѕРІР°С‚РµР»СЏ Telegram.
+    :param session_number: РќРѕРјРµСЂ С‚РµРєСѓС‰РµР№ СЃРµСЃСЃРёРё РїРѕР»СЊР·РѕРІР°С‚РµР»СЏ.
+    :param update_data: РЎР»РѕРІР°СЂСЊ СЃ РґР°РЅРЅС‹РјРё РґР»СЏ РѕР±РЅРѕРІР»РµРЅРёСЏ (РµСЃР»Рё С‚СЂРµР±СѓРµС‚СЃСЏ).
     """
     conn = create_connection(DATABASE_PATH)
 
@@ -19,38 +19,38 @@ def picnic_db_operations(user_id, session_number, update_data=None):
         try:
             cursor = conn.cursor()
 
-            # Проверка существования записи
+            # РџСЂРѕРІРµСЂРєР° СЃСѓС‰РµСЃС‚РІРѕРІР°РЅРёСЏ Р·Р°РїРёСЃРё
             check_query = "SELECT 1 FROM orders WHERE user_id = ? AND session_number = ?"
             cursor.execute(check_query, (user_id, session_number))
             exists = cursor.fetchone()
 
             if exists:
-                logging.info(f"Запись для user_id {user_id} и session_number {session_number} уже существует.")
+                logging.info(f"Р—Р°РїРёСЃСЊ РґР»СЏ user_id {user_id} Рё session_number {session_number} СѓР¶Рµ СЃСѓС‰РµСЃС‚РІСѓРµС‚.")
 
-                # Обновление записи, если update_data не пустой
+                # РћР±РЅРѕРІР»РµРЅРёРµ Р·Р°РїРёСЃРё, РµСЃР»Рё update_data РЅРµ РїСѓСЃС‚РѕР№
                 if update_data:
                     update_query = "UPDATE orders SET {} WHERE user_id = ? AND session_number = ?".format(
                         ", ".join([f"{key} = ?" for key in update_data.keys()])
                     )
                     cursor.execute(update_query, (*update_data.values(), user_id, session_number))
-                    logging.info(f"Запись для user_id {user_id} и session_number {session_number} обновлена.")
+                    logging.info(f"Р—Р°РїРёСЃСЊ РґР»СЏ user_id {user_id} Рё session_number {session_number} РѕР±РЅРѕРІР»РµРЅР°.")
 
             else:
-                # Создание новой записи
+                # РЎРѕР·РґР°РЅРёРµ РЅРѕРІРѕР№ Р·Р°РїРёСЃРё
                 insert_query = """
                     INSERT INTO orders (user_id, session_number, user_name, selected_date, start_time, end_time, 
                                         duration, people_count, selected_style, city, preferences, calculated_cost, status)
                     VALUES (?, ?, null, null, null, null, null, null, null, null, null, null, 1)
                 """
                 cursor.execute(insert_query, (user_id, session_number))
-                logging.info(f"Создана новая запись для user_id {user_id} и session_number {session_number}.")
+                logging.info(f"РЎРѕР·РґР°РЅР° РЅРѕРІР°СЏ Р·Р°РїРёСЃСЊ РґР»СЏ user_id {user_id} Рё session_number {session_number}.")
 
             conn.commit()
 
         except sqlite3.Error as e:
-            logging.error(f"Ошибка при работе с базой данных: {e}")
+            logging.error(f"РћС€РёР±РєР° РїСЂРё СЂР°Р±РѕС‚Рµ СЃ Р±Р°Р·РѕР№ РґР°РЅРЅС‹С…: {e}")
         finally:
             conn.close()
-            logging.info("Соединение с базой данных закрыто")
+            logging.info("РЎРѕРµРґРёРЅРµРЅРёРµ СЃ Р±Р°Р·РѕР№ РґР°РЅРЅС‹С… Р·Р°РєСЂС‹С‚Рѕ")
     else:
-        logging.error("Не удалось создать соединение с базой данных")
+        logging.error("РќРµ СѓРґР°Р»РѕСЃСЊ СЃРѕР·РґР°С‚СЊ СЃРѕРµРґРёРЅРµРЅРёРµ СЃ Р±Р°Р·РѕР№ РґР°РЅРЅС‹С…")

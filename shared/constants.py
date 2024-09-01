@@ -1,4 +1,4 @@
-# constants.py
+# shared/constants.py
 
 from telegram import InlineKeyboardMarkup, InlineKeyboardButton
 from datetime import datetime
@@ -6,8 +6,8 @@ import os
 
 # -------------------- Константы --------------------
 
-# Путь к базе данных SQLite. Этот путь будет зависеть от директории, в которой находится текущий файл.
-DATABASE_PATH = os.path.join(os.path.dirname(__file__), 'sqlite.db')
+# ####################Путь к базе данных SQLite. Этот путь будет зависеть от директории, в которой находится текущий файл.
+####################### DATABASE_PATH = os.path.join(os.path.dirname(__file__), 'sqlite.db')
 
 # Статусы заказов, используемые в системе. Каждое значение представляет определенный этап обработки заказа.
 ORDER_STATUS = {
