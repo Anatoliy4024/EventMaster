@@ -1,4 +1,10 @@
-import os     #
+
+
+
+import asyncio
+import nest_asyncio
+
+import os
 import logging
 import random
 from datetime import datetime, timedelta
@@ -17,6 +23,9 @@ import time
 from bot.picnic_bot. step_handlers.calculations import calculate_total_cost
 
 
+
+
+
 # Включаем логирование и указываем файл для логов
 logging.basicConfig(
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
@@ -27,6 +36,8 @@ logging.basicConfig(
 
 logger = logging.getLogger(__name__)
 logger.info(f"Database path: {DATABASE_PATH}")
+
+nest_asyncio.apply()
 
 #########################################################################
 # добавление обработчика ошибок
@@ -54,10 +65,10 @@ def add_username_column():
 
 # Пути к видеофайлам
 VIDEO_PATHS = [
-    'bot/picnic_bot/media/IMG_4077_1 (online-video-cutter.com).mp4',
-    'bot/picnic_bot/media/IMG_5981 (online-video-cutter.com).mp4',
-    'bot/picnic_bot/media/IMG_6156 (online-video-cutter.com).mp4',
-    'bot/picnic_bot/media/IMG_6412 (online-video-cutter.com).mp4'
+    'IMG_4077_1 (online-video-cutter.com).mp4',
+    'IMG_5981 (online-video-cutter.com).mp4',
+    'IMG_6156 (online-video-cutter.com).mp4',
+    'IMG_6412 (online-video-cutter.com).mp4'
 ]
 
 # Замените 'YOUR_BOT_TOKEN' на токен вашего бота
@@ -684,50 +695,53 @@ def disable_yes_no_buttons(reply_markup):
         new_keyboard.append(new_row)
     return InlineKeyboardMarkup(new_keyboard)
 
+async def error_handler(update: object, context: ContextTypes.DEFAULT_TYPE) -> None:
+    """Log the error and send a telegram message to notify the developer."""
+    logger.error(msg="Exception while handling an update:", exc_info=context.error)
+
+    # Уведомление разработчика через Telegram
+    if isinstance(update, Update):
+        try:
+            if update.message:
+                await update.message.reply_text("An error occurred. The administrator has been notified.")
+            elif update.callback_query:
+                await update.callback_query.message.reply_text(
+                    "An error occurred. The administrator has been notified.")
+        except Exception as e:
+            logger.error(f"Error notifying the user: {e}")
+
+
+def disable_language_buttons(reply_markup):
+    new_keyboard = []
+    for row in reply_markup.inline_keyboard:
+        new_row = []
+        for button in row:
+            # Делаем кнопку неактивной, присваивая ей callback_data='none'
+            new_row.append(InlineKeyboardButton(button.text, callback_data='none'))
+        new_keyboard.append(new_row)
+    return InlineKeyboardMarkup(new_keyboard)
+
+
+async def run_bot2():
+    application = ApplicationBuilder().token(BOT_TOKEN).build()
+
+    # Добавляем необходимые обработчики
+    application.add_handler(CommandHandler('start', start))
+    application.add_handler(CallbackQueryHandler(button_callback))
+    application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
+    application.add_handler(MessageHandler(filters.TEXT & filters.COMMAND, handle_city_confirmation))
+
+    # Регистрация обработчика ошибок
+    application.add_error_handler(error_handler)
+
+    # Запуск бота
+    await application.run_polling()
+
+
 if __name__ == '__main__':
     temp_data = TemporaryData()
 
-
-    async def error_handler(update: object, context: ContextTypes.DEFAULT_TYPE) -> None:
-        """Log the error and send a telegram message to notify the developer."""
-        logger.error(msg="Exception while handling an update:", exc_info=context.error)
-
-        # Уведомление разработчика через Telegram
-        if isinstance(update, Update):
-            try:
-                if update.message:
-                    await update.message.reply_text("An error occurred. The administrator has been notified.")
-                elif update.callback_query:
-                    await update.callback_query.message.reply_text(
-                        "An error occurred. The administrator has been notified.")
-            except Exception as e:
-                logger.error(f"Error notifying the user: {e}")
-
-
-    def disable_language_buttons(reply_markup):
-        new_keyboard = []
-        for row in reply_markup.inline_keyboard:
-            new_row = []
-            for button in row:
-                # Делаем кнопку неактивной, присваивая ей callback_data='none'
-                new_row.append(InlineKeyboardButton(button.text, callback_data='none'))
-            new_keyboard.append(new_row)
-        return InlineKeyboardMarkup(new_keyboard)
-
-
-
+    # Настройка логирования
     logging.basicConfig(level=logging.DEBUG)
 
-
-    def run_bot2():
-        application = ApplicationBuilder().token('7407529729:AAErOT5NBpMSO-V-HPAW-MDu_1WQt0TtXng').build()
-
-        application.add_handler(CommandHandler('start', start))
-        application.add_handler(CallbackQueryHandler(button_callback))
-        application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
-        application.add_handler(MessageHandler(filters.TEXT & filters.COMMAND, handle_city_confirmation))
-
-        # Регистрация обработчика ошибок
-        application.add_error_handler(error_handler)
-
-        application.run_polling()
+    asyncio.run(run_bot2())

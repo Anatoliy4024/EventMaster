@@ -1,4 +1,6 @@
 # bot/admin_bot/main.py
+import nest_asyncio
+import asyncio
 import os
 import sqlite3
 import logging
@@ -27,6 +29,10 @@ logging.basicConfig(
     filename=log_file
 )
 logger = logging.getLogger(__name__)
+
+# Подключаем nest_asyncio для обхода ошибки с событийным циклом
+nest_asyncio.apply()
+
 
 # Функция для получения user_id и username по user_id
 def get_user_info_by_user_id(user_id):
@@ -161,20 +167,30 @@ async def button_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
             await query.message.reply_text("Произошла ошибка при попытке получить информацию о пользователе.")
 
 
+# функция для запуска из главного main EventMaster
 async def run_bot1():
     application = ApplicationBuilder().token(BOT_TOKEN).build()
 
+    # Добавляем необходимые обработчики
     application.add_handler(CommandHandler('start', start))
     application.add_handler(CallbackQueryHandler(button_callback))
+    # Добавьте другие ваши обработчики здесь
 
-    await application.start()  # Асинхронный запуск приложения
-    await application.updater.start_polling()  # Асинхронный запуск polling
+    # Запуск бота
+    await application.run_polling()
 
-    print("Bot1 started")
 
-    # Ждем завершения polling
-    await application.updater.wait()
+# Основной блок
+if __name__ == '__main__':
+    asyncio.run(run_bot1())
 
-    # Остановка приложения
-    await application.stop()
-    await application.shutdown()
+
+    # старое правильное включение двух ботов в удаленную третью базу)
+    # application = ApplicationBuilder().token(BOT_TOKEN).build()
+    #
+    # application.add_handler(CommandHandler('start', start))
+    # application.add_handler(CallbackQueryHandler(button_callback))
+    #
+    # application.run_polling()
+
+
