@@ -8,9 +8,10 @@ from telegram import Update
 from telegram.ext import ContextTypes, ApplicationBuilder, CommandHandler, CallbackQueryHandler, MessageHandler, filters
 from shared.config import DATABASE_PATH, BOT_TOKEN, IRA_CHAT_ID, ADMIN_CHAT_ID  # Импортируем ID ДЛЯ СЦЕНАРИЯ ИРИНА И СЕРВИС
 from shared.constants import UserData, ORDER_STATUS
-from bot.admin_bot.helpers.database_helpers import send_proforma_to_user, get_full_proforma, get_latest_session_number
+from bot.admin_bot.scenarios.user_scenario import send_proforma_to_user, get_full_proforma, get_latest_session_number
 from bot.admin_bot.keyboards.admin_keyboards import user_options_keyboard, irina_service_menu, service_menu_keyboard
-from shared.translations import language_selection_keyboard
+from bot.admin_bot.scenarios.user_scenario import user_welcome_message
+from bot.admin_bot.scenarios.admin_scenario import admin_welcome_message
 
 ORDER_STATUS_REVERSE = {v: k for k, v in ORDER_STATUS.items()}
 
@@ -54,15 +55,8 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     # Проверка ID пользователя
     if user_id == IRA_CHAT_ID:
-        # Приветственное сообщение для Ирины
-        message = await update.message.reply_text(
-            "Привет, Иринушка! Я - твой АдминБот."
-        )
-        # Отображаем меню с 5 кнопками для Ирины
-        options_message = await update.message.reply_text(
-            "ВЫБЕРИ ДЕЙСТВИЕ:",
-            reply_markup=irina_service_menu()
-        )
+        # Вызов функции из admin_scenario.py
+        await admin_welcome_message(update)
     elif user_id == ADMIN_CHAT_ID:
         # Приветственное сообщение для Службы сервиса
         message = await update.message.reply_text(
@@ -76,10 +70,8 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
         )
     else:
         # Обычное приветственное сообщение для других пользователей
-        message = await update.message.reply_text(
-            f"Welcome {user.first_name}! Choose your language / Выберите язык",
-            reply_markup=language_selection_keyboard()
-        )
+        message = await user_welcome_message(update, user.first_name)
+
 
     # Сохраняем ID сообщения с кнопками, чтобы потом их заменить
     context.user_data['language_message_id'] = message.message_id

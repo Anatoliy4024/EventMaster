@@ -65,10 +65,10 @@ def add_username_column():
 
 # Пути к видеофайлам
 VIDEO_PATHS = [
-    'media/IMG_4077_1 (online-video-cutter.com).mp4',
-    'media/IMG_5981 (online-video-cutter.com).mp4',
-    'media/IMG_6156 (online-video-cutter.com).mp4',
-    'media/IMG_6412 (online-video-cutter.com).mp4'
+    r'C:\Users\USER\PycharmProjects\EventMaster\media\IMG_4077_1 (online-video-cutter.com).mp4',
+    r'C:\Users\USER\PycharmProjects\EventMaster\media\IMG_5981 (online-video-cutter.com).mp4',
+    r'C:\Users\USER\PycharmProjects\EventMaster\media\IMG_6156 (online-video-cutter.com).mp4',
+    r'C:\Users\USER\PycharmProjects\EventMaster\media\IMG_6156 (online-video-cutter.com).mp4'
 ]
 
 # Замените 'YOUR_BOT_TOKEN' на токен вашего бота
@@ -312,7 +312,7 @@ async def button_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
             user_data.set_step('order_confirmation')
             # await show_payment_page(update, context)
             await query.message.reply_text(show_payment_page_handler(context))
-            await asyncio.sleep(3)
+            await asyncio.sleep(2)
             await show_proforma(update, context)
 
         elif user_data.get_step() == 'time_confirmation':

@@ -1,10 +1,12 @@
 import sqlite3
 import logging
-from telegram import Update
+from telegram import Update, Bot
 from telegram.ext import ContextTypes
-from bot.admin_bot.helpers.database_helpers import send_proforma_to_user, get_latest_session_number, get_full_proforma
+from bot.admin_bot.helpers.database_helpers import get_latest_session_number, get_full_proforma
 from bot.admin_bot.keyboards.admin_keyboards import user_options_keyboard
+from shared.config import BOT_TOKEN
 from shared.constants import UserData, ORDER_STATUS
+from shared.translations import language_selection_keyboard, translations
 
 from shared.config import DATABASE_PATH
 
@@ -13,77 +15,71 @@ ORDER_STATUS_REVERSE = {v: k for k, v in ORDER_STATUS.items()}
 import logging
 
 # Логирование
-logging.basicConfig(
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-    level=logging.INFO,
-    filename=r'C:\Users\USER\PycharmProjects\EventMaster\shared\logs\admin_bot.log'  # Укажите путь к файлу лога
-)
-logger = logging.getLogger(__name__)
+# logging.basicConfig(
+#     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+#     level=logging.INFO,
+#     filename=r'C:\Users\USER\PycharmProjects\EventMaster\bot\admin_bot\helpers\logs'  # Укажите путь к файлу лога
+# )
+# logger = logging.getLogger(__name__)
 
-async def handle_proforma_request(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    query = update.callback_query
-    await query.answer()
-
-    user_data = context.user_data.get('user_data', UserData())
-    context.user_data['user_data'] = user_data
-
-    if query.data.startswith('lang_'):
-        language_code = query.data.split('_')[1]
-        user_data.set_language(language_code)
-
-        # Удаляем предыдущие сообщения с опциями и проформой
-        options_message_id = context.user_data.get('options_message_id')
-        proforma_message_id = context.user_data.get('proforma_message_id')
-
-        if options_message_id:
-            try:
-                await context.bot.delete_message(chat_id=query.message.chat_id, message_id=options_message_id)
-            except Exception as e:
-                logging.error(f"Error deleting options message: {e}")
-
-        if proforma_message_id:
-            try:
-                await context.bot.delete_message(chat_id=query.message.chat_id, message_id=proforma_message_id)
-            except Exception as e:
-                logging.error(f"Error deleting proforma message: {e}")
-
-        # Отправляем новые кнопки в соответствии с выбранным языком и заголовок
-        headers = {
-            'en': "Choose",
-            'ru': "Выбери",
-            'es': "Elige",
-            'fr': "Choisissez",
-            'uk': "Виберіть",
-            'pl': "Wybierz",
-            'de': "Wählen",
-            'it': "Scegli"
-        }
-
-        user_id = update.effective_user.id  # Получаем user_id пользователя
-        new_options_message = await query.message.reply_text(
-            headers.get(language_code, "Choose"),
-            reply_markup=user_options_keyboard(language_code, user_id)
+async def user_welcome_message(update: Update, first_name):
+    return await update.message.reply_text(
+            f"Welcome {first_name}! Choose your language / Выберите язык",
+            reply_markup=language_selection_keyboard()
         )
 
-        # Обновляем ID сообщения с новыми опциями
-        context.user_data['options_message_id'] = new_options_message.message_id
-    elif query.data == 'get_proforma':  # Было 'get_full_proforma', заменили на 'get_proforma'
-        try:
-            # Получаем user_id пользователя
-            user_id = update.effective_user.id
 
-            # Получаем последний session_number для пользователя
-            session_number = get_latest_session_number(user_id)
+async def send_proforma_to_user(user_id, session_number, user_data):
+    """Отправляет информацию о заказе пользователю."""
+    conn = None  # Инициализация переменной
+    try:
+        # Получаем полную проформу
+        order_info = get_full_proforma(user_id, session_number)
 
-            if session_number:
-                # Отправляем проформу пользователю
-                proforma_message = await send_proforma_to_user(user_id, session_number, user_data)
+        # Получаем язык пользователя из user_data
+        language = user_data.get_language() or 'en'
+        trans = translations.get(language, translations['en'])  # Используем 'en' по умолчанию
 
-                # Сохраняем ID сообщения с проформой
-                context.user_data['proforma_message_id'] = proforma_message.message_id
+        # Формируем сообщение для отправки пользователю
+        user_message = (
+            f"{trans['order_confirmed']}\n"
+            f"{trans['proforma_number']} {order_info[0]}_{order_info[1]}_{order_info[10]}\n"
+            f"{trans['event_date']} {order_info[2]}\n"
+            f"{trans['time']} {order_info[3]} - {order_info[4]}\n"
+            f"{trans['people_count']} {order_info[5]}\n"
+            f"{trans['event_style']} {order_info[6]}\n"
+            f"{trans['city']} {order_info[7]}\n"
+            f"{trans['amount_to_pay']} {float(order_info[8]) - 20} евро\n"
+            f"\n{trans['delivery_info']}"
+        )
 
-            else:
-                await query.message.reply_text(f"Не удалось найти session_number для user_id: {user_id}")
-        except Exception as e:
-            logger.error(f"Ошибка при получении информации о пользователе: {str(e)}")
-            await query.message.reply_text("Произошла ошибка при попытке получить информацию о пользователе.")
+        # Отправляем сообщение пользователю
+        bot = Bot(token=BOT_TOKEN)
+        message = await bot.send_message(chat_id=user_id, text=user_message)
+
+        logging.info(f"Message sent to user {user_id}.")
+
+        # Обновляем статус ордера
+        conn = sqlite3.connect(DATABASE_PATH)
+        cursor = conn.cursor()
+        cursor.execute(
+            "UPDATE orders SET status = ? WHERE user_id = ? AND session_number = ?",
+            (ORDER_STATUS["5-Заказчик зашел в АдминБот и просмотрел свою ПРОФОРМУ"], user_id, session_number)
+        )
+        conn.commit()
+
+        return message
+
+    except Exception as e:
+        logging.error(f"Failed to send order info to user: {e}")
+        print(f"Ошибка при отправке сообщения: {e}")
+
+    if conn:  # Проверяем, инициализирована ли переменная
+
+        conn.close()
+
+
+
+
+
+

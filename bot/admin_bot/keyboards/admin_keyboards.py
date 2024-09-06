@@ -5,24 +5,10 @@ import urllib.parse
 
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import CallbackContext
-
-from bot.admin_bot.helpers.database_helpers import get_latest_session_number, get_full_proforma
+from bot.admin_bot.helpers.database_helpers import get_full_proforma
+from bot.admin_bot.scenarios.user_scenario import get_latest_session_number
 from shared.translations import translations, button_texts
 
-
-async def delete_client(update: Update, context: CallbackContext):
-    logging.info("Функция delete_client вызвана")
-    query = update.callback_query
-    await query.answer()
-
-    # Логирование для отладки
-    logging.info("Функция delete_client вызвана")
-
-    # Запрашиваем у Ирины дату для удаления клиента
-    await query.message.reply_text("Введите дату клиента, которого хотите удалить (формат ДД.ММ.ГГГГ):")
-
-    # Устанавливаем шаг, чтобы бот ожидал ввода даты
-    context.user_data['step'] = 'awaiting_date_for_deletion'
 
 def irina_service_menu():
     keyboard = [
