@@ -3,7 +3,6 @@ import logging
 from telegram import Update, Bot
 from telegram.ext import ContextTypes
 from bot.admin_bot.helpers.database_helpers import get_latest_session_number, get_full_proforma
-from bot.admin_bot.keyboards.admin_keyboards import user_options_keyboard
 from shared.config import BOT_TOKEN
 from shared.constants import UserData, ORDER_STATUS
 from shared.translations import language_selection_keyboard, translations

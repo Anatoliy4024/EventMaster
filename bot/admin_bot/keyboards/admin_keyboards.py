@@ -2,7 +2,7 @@
 
 import logging
 import urllib.parse
-
+import sqlite3
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import CallbackContext
 from bot.admin_bot.helpers.database_helpers import get_full_proforma
@@ -10,10 +10,12 @@ from bot.admin_bot.scenarios.user_scenario import get_latest_session_number
 from shared.translations import translations, button_texts
 
 
+from shared.config import DATABASE_PATH
+
 def irina_service_menu():
     keyboard = [
         [InlineKeyboardButton("Найти и смотреть ПРОФОРМУ", callback_data='find_and_view_order')],
-        [InlineKeyboardButton("Внести клиента в базу данных", callback_data='add_client')],
+        [InlineKeyboardButton("Внести клиента в базу данных", url='https://t.me/PicnicsAlicanteBot?start=start')],
         [InlineKeyboardButton("Удалить клиента из базы данных", callback_data='delete_client')]
     ]
     return InlineKeyboardMarkup(keyboard)
@@ -60,3 +62,5 @@ def user_options_keyboard(language, user_id):
     ]
 
     return InlineKeyboardMarkup(keyboard)
+
+

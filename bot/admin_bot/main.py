@@ -11,7 +11,7 @@ from shared.constants import UserData, ORDER_STATUS
 from bot.admin_bot.scenarios.user_scenario import send_proforma_to_user, get_full_proforma, get_latest_session_number
 from bot.admin_bot.keyboards.admin_keyboards import user_options_keyboard, irina_service_menu, service_menu_keyboard
 from bot.admin_bot.scenarios.user_scenario import user_welcome_message
-from bot.admin_bot.scenarios.admin_scenario import admin_welcome_message
+from bot.admin_bot.scenarios.admin_scenario import admin_welcome_message, handle_delete_client_callback, show_calendar_to_admin
 from bot.admin_bot.scenarios.service_scenario import service_welcome_message
 ORDER_STATUS_REVERSE = {v: k for k, v in ORDER_STATUS.items()}
 
@@ -45,6 +45,7 @@ def get_user_info_by_user_id(user_id):
     return user_info
 
 # Обработчик команды /start
+# Обработчик команды /start
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user = update.message.from_user
     user_id = user.id  # Получаем user_id пользователя
@@ -66,7 +67,6 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
         # Обычное приветственное сообщение для других пользователей
         message = await user_welcome_message(update, user.first_name)
 
-
     # Сохраняем ID сообщения с кнопками, чтобы потом их заменить
     context.user_data['language_message_id'] = message.message_id
 
@@ -74,6 +74,8 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if options_message:
         context.user_data['options_message_id'] = options_message.message_id
 
+
+# Обработчик нажатий на кнопки
 # Обработчик нажатий на кнопки
 async def button_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
@@ -86,7 +88,16 @@ async def button_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_data = context.user_data.get('user_data', UserData())
     context.user_data['user_data'] = user_data
 
-    if query.data.startswith('lang_'):
+    if query.data == 'show_calendar':
+        # Нажата кнопка "Показать календарь"
+        await show_calendar_to_admin(update, context)
+
+    elif query.data == 'delete_client':
+        # Нажата кнопка "Удалить клиента"
+        await handle_delete_client_callback(update, context)
+
+    # Дополнительные обработчики для других кнопок, например, смены языка и проформы:
+    elif query.data.startswith('lang_'):
         language_code = query.data.split('_')[1]
         user_data.set_language(language_code)
 
@@ -151,6 +162,7 @@ async def button_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
         except Exception as e:
             logger.error(f"Ошибка при получении информации о пользователе: {str(e)}")
             await query.message.reply_text("Произошла ошибка при попытке получить информацию о пользователе.")
+
 
 
 # функция для запуска из главного main EventMaster
