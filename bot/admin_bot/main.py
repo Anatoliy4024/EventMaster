@@ -12,7 +12,7 @@ from bot.admin_bot.scenarios.user_scenario import send_proforma_to_user, get_ful
 from bot.admin_bot.keyboards.admin_keyboards import user_options_keyboard, irina_service_menu, service_menu_keyboard
 from bot.admin_bot.scenarios.user_scenario import user_welcome_message
 from bot.admin_bot.scenarios.admin_scenario import admin_welcome_message
-
+from bot.admin_bot.scenarios.service_scenario import service_welcome_message
 ORDER_STATUS_REVERSE = {v: k for k, v in ORDER_STATUS.items()}
 
 
@@ -57,17 +57,11 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if user_id == IRA_CHAT_ID:
         # Вызов функции из admin_scenario.py
         await admin_welcome_message(update)
+
     elif user_id == ADMIN_CHAT_ID:
-        # Приветственное сообщение для Службы сервиса
-        message = await update.message.reply_text(
-            "Привет! Твой id - ........ соответствует Службе сервиса.\n"
-            "Предоставляю доступ к технической информации"
-        )
-        # Отображаем меню с кнопками для Службы сервиса
-        options_message = await update.message.reply_text(
-            "ВЫБЕРИ ДЕЙСТВИЕ:",
-            reply_markup=service_menu_keyboard()
-        )
+        # Вызов функции из service_scenario.py
+        await service_welcome_message(update)
+
     else:
         # Обычное приветственное сообщение для других пользователей
         message = await user_welcome_message(update, user.first_name)

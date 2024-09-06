@@ -72,7 +72,6 @@ async def send_proforma_to_user(user_id, session_number, user_data):
 
     except Exception as e:
         logging.error(f"Failed to send order info to user: {e}")
-        print(f"Ошибка при отправке сообщения: {e}")
 
     if conn:  # Проверяем, инициализирована ли переменная
 
