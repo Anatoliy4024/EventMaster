@@ -21,18 +21,19 @@ async def admin_welcome_message(update: Update):
     return message, options_message
 
 
-async def show_calendar_to_admin(update: Update, context: ContextTypes.DEFAULT_TYPE):
+async def show_calendar_to_admin(update: Update, context: ContextTypes.DEFAULT_TYPE, month_offset=0):
     query = update.callback_query
     await query.answer()
 
-    # Генерация календаря с текущим месяцем
-    calendar_markup = generate_calendar_keyboard()
+    # Генерация календаря с текущим или выбранным месяцем
+    calendar_markup = generate_calendar_keyboard(month_offset=month_offset)
 
     # Отправляем сообщение с календарем
     await query.message.reply_text(
         text="Выберите дату для просмотра активных проформ:",
         reply_markup=calendar_markup
     )
+
 
 async def handle_delete_client_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
     # Здесь можно добавить код для обработки удаления клиента
@@ -44,4 +45,3 @@ async def handle_delete_client_callback(update: Update, context: ContextTypes.DE
     Обрабатывает нажатие на кнопку 'Удалить клиента из базы данных'.
     """
     await show_calendar_to_admin(update, context)
-

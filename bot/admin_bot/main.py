@@ -88,7 +88,16 @@ async def button_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_data = context.user_data.get('user_data', UserData())
     context.user_data['user_data'] = user_data
 
-    if query.data == 'show_calendar':
+    # Обработка нажатий на календарь
+    if query.data.startswith('prev_month_'):
+        month_offset = int(query.data.split('_')[1])
+        await show_calendar_to_admin(update, context, month_offset)
+
+    elif query.data.startswith('next_month_'):
+        month_offset = int(query.data.split('_')[2])
+        await show_calendar_to_admin(update, context, month_offset)
+
+    elif query.data == 'show_calendar':
         # Нажата кнопка "Показать календарь"
         await show_calendar_to_admin(update, context)
 
@@ -190,5 +199,4 @@ if __name__ == '__main__':
     # application.add_handler(CallbackQueryHandler(button_callback))
     #
     # application.run_polling()
-
 

@@ -4,6 +4,7 @@ from telegram import InlineKeyboardButton, InlineKeyboardMarkup
 import sqlite3
 from shared.config import DATABASE_PATH  # Путь к базе данных
 
+
 def get_dates_with_active_proformas():
     """
     Получает даты, на которые есть хотя бы одна проформа со статусом >= 3.
@@ -22,13 +23,11 @@ def get_dates_with_active_proformas():
     finally:
         conn.close()
 
+
 def check_date_reserved(date, reserved_dates):
     """Проверяет, зарезервирована ли дата."""
     return date in reserved_dates
 
-from telegram import InlineKeyboardButton, InlineKeyboardMarkup
-from datetime import datetime, timedelta
-import calendar
 
 # bot/admin_bot/helpers/calendar_helpers.py
 from datetime import datetime, timedelta
@@ -36,9 +35,11 @@ import calendar
 import logging
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup
 
+
 def to_superscript(num_str):
     superscript_map = str.maketrans('0123456789', '⁰¹²³⁴⁵⁶⁷⁸⁹')
     return num_str.translate(superscript_map)
+
 
 def generate_month_name(month, language):
     months = {
@@ -47,6 +48,7 @@ def generate_month_name(month, language):
         # Добавьте другие языки по необходимости
     }
     return months[language][month - 1]
+
 
 def generate_calendar_keyboard(month_offset=0, language='en'):
     today = datetime.today()
@@ -75,6 +77,8 @@ def generate_calendar_keyboard(month_offset=0, language='en'):
     start_weekday = first_of_month.weekday()
     current_date = first_of_month
 
+    reserved_dates = get_dates_with_active_proformas()  # Get reserved dates
+
     # Заполняем календарь днями месяца
     for _ in range(5):  # 5 строк (максимум) для дней месяца
         for day in range(len(calendar_buttons)):
@@ -84,16 +88,29 @@ def generate_calendar_keyboard(month_offset=0, language='en'):
                 calendar_buttons[day].append(InlineKeyboardButton(" ", callback_data='none'))
             else:
                 day_text = to_superscript(str(current_date.day))
-                calendar_buttons[day].append(InlineKeyboardButton(f" {current_date.day}", callback_data=f'date_{current_date.strftime("%Y-%m-%d")}'))
+
+                # Check if the date is reserved
+                if check_date_reserved(current_date.strftime("%Y-%m-%d"), reserved_dates):
+                    calendar_buttons[day].append(InlineKeyboardButton(f"🔻 {day_text}", callback_data='none'))
+                else:
+                    calendar_buttons[day].append(InlineKeyboardButton(f" {current_date.day}",
+                                                                      callback_data=f'date_{current_date.strftime("%Y-%m-%d")}'))
+
                 current_date += timedelta(days=1)
 
-    prev_month_button = InlineKeyboardButton("<", callback_data=f"prev_month_{month_offset - 1}")
-    next_month_button = InlineKeyboardButton(">", callback_data=f"next_month_{month_offset + 1}")
+    # Ограничим перемещение на 1 месяц назад и 2 месяца вперед
+    prev_month_button = InlineKeyboardButton("<",
+                                             callback_data=f"prev_month_{month_offset - 1}") if month_offset > -1 else InlineKeyboardButton(
+        " ", callback_data="none")
+    next_month_button = InlineKeyboardButton(">",
+                                             callback_data=f"next_month_{month_offset + 1}") if month_offset < 2 else InlineKeyboardButton(
+        " ", callback_data="none")
     month_name_button = InlineKeyboardButton(f"{month_name} {first_of_month.year}", callback_data="none")
 
     calendar_buttons.append([prev_month_button, month_name_button, next_month_button])
 
     return InlineKeyboardMarkup(calendar_buttons)
+
 
 def disable_calendar_buttons(reply_markup, selected_date):
     new_keyboard = []

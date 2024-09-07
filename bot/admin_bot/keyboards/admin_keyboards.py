@@ -63,4 +63,3 @@ def user_options_keyboard(language, user_id):
 
     return InlineKeyboardMarkup(keyboard)
 
-
