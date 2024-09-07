@@ -124,3 +124,28 @@ def disable_calendar_buttons(reply_markup, selected_date):
                 new_row.append(InlineKeyboardButton(button.text, callback_data='none'))
         new_keyboard.append(new_row)
     return InlineKeyboardMarkup(new_keyboard)
+
+async def handle_calendar_navigation(update, context):
+    query = update.callback_query
+    data = query.data
+
+    if data.startswith('date_'):
+        # Импортируем здесь, чтобы избежать циклического импорта
+        from bot.admin_bot.scenarios.admin_scenario import disable_calendar_buttons
+
+        # Если была выбрана дата
+        selected_date = data.split('_')[1]
+        # Отключаем все остальные кнопки и оставляем выбранную с красной точкой
+        new_reply_markup = disable_calendar_buttons(query.message.reply_markup, selected_date)
+        await query.edit_message_reply_markup(reply_markup=new_reply_markup)
+
+    elif data.startswith('prev_month_') or data.startswith('next_month_'):
+        # Импортируем здесь, чтобы избежать циклического импорта
+        from bot.admin_bot.scenarios.admin_scenario import generate_calendar_keyboard
+
+        # Логика для переключения между месяцами
+        month_offset = int(data.split('_')[-1])
+
+        # Теперь мы не отправляем новое сообщение, а редактируем текущее
+        calendar_markup = generate_calendar_keyboard(month_offset)
+        await query.edit_message_reply_markup(reply_markup=calendar_markup)
