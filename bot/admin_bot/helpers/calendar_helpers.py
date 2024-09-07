@@ -5,6 +5,8 @@ import sqlite3
 from shared.config import DATABASE_PATH  # Путь к базе данных
 
 
+
+
 def get_dates_with_active_proformas():
     """
     Получает даты, на которые есть хотя бы одна проформа со статусом >= 3.
@@ -27,13 +29,6 @@ def get_dates_with_active_proformas():
 def check_date_reserved(date, reserved_dates):
     """Проверяет, зарезервирована ли дата."""
     return date in reserved_dates
-
-
-# bot/admin_bot/helpers/calendar_helpers.py
-from datetime import datetime, timedelta
-import calendar
-import logging
-from telegram import InlineKeyboardButton, InlineKeyboardMarkup
 
 
 def to_superscript(num_str):
@@ -100,7 +95,7 @@ def generate_calendar_keyboard(month_offset=0, language='en'):
 
     # Ограничим перемещение на 1 месяц назад и 2 месяца вперед
     prev_month_button = InlineKeyboardButton("<",
-                                             callback_data=f"prev_month_{month_offset - 1}") if month_offset > -1 else InlineKeyboardButton(
+                                             callback_data=f"prev_month_{month_offset - 1}") if month_offset > -2 else InlineKeyboardButton(
         " ", callback_data="none")
     next_month_button = InlineKeyboardButton(">",
                                              callback_data=f"next_month_{month_offset + 1}") if month_offset < 2 else InlineKeyboardButton(
@@ -110,6 +105,17 @@ def generate_calendar_keyboard(month_offset=0, language='en'):
     calendar_buttons.append([prev_month_button, month_name_button, next_month_button])
 
     return InlineKeyboardMarkup(calendar_buttons)
+
+
+async def handle_calendar_navigation(update, context):
+    query = update.callback_query
+    data = query.data
+    month_offset = int(data.split('_')[-1])
+
+    language = 'en'  # Use actual user's language setting if available
+    new_calendar = generate_calendar_keyboard(month_offset, language)
+
+    await query.edit_message_reply_markup(reply_markup=new_calendar)
 
 
 def disable_calendar_buttons(reply_markup, selected_date):
