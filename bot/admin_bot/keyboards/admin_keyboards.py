@@ -62,3 +62,26 @@ def user_options_keyboard(language, user_id):
     ]
 
     return InlineKeyboardMarkup(keyboard)
+
+def yes_no_keyboard(language):
+    texts = {
+        'en': {'yes': 'Yes', 'no': 'No'},
+        'ru': {'yes': 'Да', 'no': 'Нет'},
+        'es': {'yes': 'Sí', 'no': 'No'},
+        'fr': {'yes': 'Oui', 'no': 'Non'},
+        'uk': {'yes': 'Так', 'no': 'Ні'},
+        'pl': {'yes': 'Tak', 'no': 'Nie'},
+        'de': {'yes': 'Ja', 'no': 'Nein'},
+        'it': {'yes': 'Sì', 'no': 'No'}
+    }
+
+    # Создаем клавиатуру с двумя кнопками "Да" и "Нет"
+    keyboard = [
+        [
+            InlineKeyboardButton(texts[language]['yes'], callback_data='yes'),
+            InlineKeyboardButton(texts[language]['no'], callback_data='no')
+        ]
+    ]
+
+    # Возвращаем клавиатуру
+    return InlineKeyboardMarkup(keyboard)

@@ -11,7 +11,8 @@ from shared.constants import UserData, ORDER_STATUS
 from bot.admin_bot.scenarios.user_scenario import send_proforma_to_user, get_full_proforma, get_latest_session_number
 from bot.admin_bot.keyboards.admin_keyboards import user_options_keyboard, irina_service_menu, service_menu_keyboard
 from bot.admin_bot.scenarios.user_scenario import user_welcome_message
-from bot.admin_bot.scenarios.admin_scenario import admin_welcome_message, handle_delete_client_callback, show_calendar_to_admin
+from bot.admin_bot.scenarios.admin_scenario import admin_welcome_message, handle_delete_client_callback, \
+    show_calendar_to_admin, handle_date_selection
 from bot.admin_bot.scenarios.service_scenario import service_welcome_message
 
 ORDER_STATUS_REVERSE = {v: k for k, v in ORDER_STATUS.items()}
@@ -185,6 +186,8 @@ async def run_bot1():
     # Добавляем необходимые обработчики
     application.add_handler(CommandHandler('start', start))
     application.add_handler(CallbackQueryHandler(button_callback))
+    application.add_handler(CallbackQueryHandler(handle_date_selection, pattern=r'^date_\d{4}-\d{2}-\d{2}$'))
+
 
     # Добавьте другие ваши обработчики здесь
 

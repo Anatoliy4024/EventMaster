@@ -131,13 +131,17 @@ async def handle_calendar_navigation(update, context):
 
     if data.startswith('date_'):
         # Импортируем здесь, чтобы избежать циклического импорта
-        from bot.admin_bot.scenarios.admin_scenario import disable_calendar_buttons
+        from bot.admin_bot.scenarios.admin_scenario import disable_calendar_buttons, generate_proforma_buttons
 
         # Если была выбрана дата
         selected_date = data.split('_')[1]
+
         # Отключаем все остальные кнопки и оставляем выбранную с красной точкой
         new_reply_markup = disable_calendar_buttons(query.message.reply_markup, selected_date)
         await query.edit_message_reply_markup(reply_markup=new_reply_markup)
+
+        # Переход на следующий шаг — формирование кнопок для проформ
+        await query.message.reply_text(f"Вы выбрали дату {selected_date}. Формирую проформы...", reply_markup=generate_proforma_buttons(selected_date))
 
     elif data.startswith('prev_month_') or data.startswith('next_month_'):
         # Импортируем здесь, чтобы избежать циклического импорта

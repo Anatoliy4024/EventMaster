@@ -136,6 +136,22 @@ translations = {
         'whatsapp_message': "Ciao, Irina! Ho una domanda sul mio ordine",
         'whatsapp_footer': "(per favore scrivi qui la tua domanda)"
     }
+
+
+}
+
+
+translations_yes_no = {
+    'confirmation_date': {
+        'en': "You selected {date}, correct?",
+        'ru': "Вы выбрали {date}, правильно?",
+        'es': "Seleccionaste {date}, ¿correcto?",
+        'fr': "Vous avez sélectionné {date}, correct ?",
+        'uk': "Ви вибрали {date}, правильно?",
+        'pl': "Wybrałeś {date}, правильно?",
+        'de': "Sie haben {date} gewählt, richtig?",
+        'it': "Hai selezionato {date}, corretto?"
+    }
 }
 
 
