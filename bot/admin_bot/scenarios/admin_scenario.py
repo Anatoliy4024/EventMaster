@@ -8,11 +8,13 @@ import telegram
 from bot.admin_bot.helpers.calendar_helpers import generate_calendar_keyboard
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import ContextTypes
+
+from bot.admin_bot.helpers.database_helpers import get_full_proforma
 from bot.admin_bot.keyboards.admin_keyboards import irina_service_menu, yes_no_keyboard
 from shared.config import DATABASE_PATH
 from shared.helpers import create_connection
 from bot.admin_bot.helpers.calendar_helpers import disable_calendar_buttons
-
+from shared.translations import translations
 
 
 async def admin_welcome_message(update: Update):
@@ -175,9 +177,53 @@ async def generate_proforma_buttons_by_date(selected_date):
         buttons = []
         for proforma in proforma_list:
             proforma_number = f"{proforma[0]}_{proforma[1]}_{proforma[2]}"
-            buttons.append([InlineKeyboardButton(proforma_number, callback_data=f"proforma_{proforma[1]}")])
+
+            # Выводим callback_data в консоль для проверки
+            print(f"Callback data для кнопки: {proforma_number}")
+
+            # callback_data = f"{proforma['user_id']}_{proforma['session_number']}_{proforma['status']}"
+            # buttons.append([InlineKeyboardButton(proforma_number, callback_data=callback_data)])
+
+            buttons.append([InlineKeyboardButton(proforma_number, callback_data=f"{proforma[0]}_{proforma[1]}_{proforma[2]}")])
 
         return InlineKeyboardMarkup(buttons)
 
     finally:
         conn.close()
+
+
+async def handle_proforma_button_click(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    query = update.callback_query
+    proforma_data = query.data.split('_')
+
+    # Проверяем, что данные проформы корректны
+    if len(proforma_data) == 3:
+        user_id = proforma_data[0]
+        session_number = proforma_data[1]
+        status = proforma_data[2]
+
+        # Логируем для отладки
+        print(f"user_id: {user_id}, session_number: {session_number}, status: {status}")
+
+        # Попробуем получить информацию о проформе
+        try:
+            proforma_info = get_full_proforma(user_id, session_number)
+            if proforma_info:
+                # Формируем текст сообщения для отправки админу
+                full_proforma_text = (
+                    f"Полная информация по проформе:\n\n"
+                    f"User ID: {proforma_info[0]}\n"
+                    f"Session Number: {proforma_info[1]}\n"
+                    f"Дата события: {proforma_info[2]}\n"
+                    f"Время: {proforma_info[3]} - {proforma_info[4]}\n"
+                    f"Количество участников: {proforma_info[5]}\n"
+                    f"Стиль мероприятия: {proforma_info[6]}\n"
+                    f"Город: {proforma_info[7]}\n"
+                    f"Стоимость: {proforma_info[8]} евро\n"
+                    f"Статус: {proforma_info[10]}"
+                )
+                await query.message.reply_text(full_proforma_text)
+            else:
+                await query.message.reply_text("Проформа не найдена.")
+        except Exception as e:
+            await query.message.reply_text(f"Произошла ошибка при получении проформы: {str(e)}")

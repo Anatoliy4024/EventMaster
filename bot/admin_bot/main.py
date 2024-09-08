@@ -12,7 +12,7 @@ from bot.admin_bot.scenarios.user_scenario import send_proforma_to_user, get_ful
 from bot.admin_bot.keyboards.admin_keyboards import user_options_keyboard, irina_service_menu, service_menu_keyboard
 from bot.admin_bot.scenarios.user_scenario import user_welcome_message
 from bot.admin_bot.scenarios.admin_scenario import admin_welcome_message, handle_delete_client_callback, \
-    show_calendar_to_admin, handle_date_selection, generate_proforma_buttons_by_date
+    show_calendar_to_admin, handle_date_selection, generate_proforma_buttons_by_date, handle_proforma_button_click
 from bot.admin_bot.scenarios.service_scenario import service_welcome_message
 
 ORDER_STATUS_REVERSE = {v: k for k, v in ORDER_STATUS.items()}
@@ -198,7 +198,6 @@ async def button_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
             await query.message.reply_text("Произошла ошибка при попытке получить информацию о пользователе.")
 
 
-
 # функция для запуска из главного main EventMaster
 async def run_bot1():
     application = ApplicationBuilder().token(BOT_TOKEN).build()
@@ -206,10 +205,14 @@ async def run_bot1():
     # Добавляем необходимые обработчики
     application.add_handler(CommandHandler('start', start))
 
+    # Обработчик для выбора даты
     application.add_handler(CallbackQueryHandler(handle_date_selection, pattern=r'^date_\d{4}-\d{2}-\d{2}$'))
-    application.add_handler(CallbackQueryHandler(button_callback))
 
-    # Добавьте другие ваши обработчики здесь
+    # Обработчик для кнопок проформы
+    application.add_handler(CallbackQueryHandler(handle_proforma_button_click, pattern=r'^\d+_\d+_\d+$'))  # Обработчик проформ
+
+    # Обработчик для других кнопок
+    application.add_handler(CallbackQueryHandler(button_callback))
 
     # Запуск бота
     await application.run_polling()
@@ -218,8 +221,6 @@ async def run_bot1():
 # Основной блок
 if __name__ == '__main__':
     asyncio.run(run_bot1())
-
-
     # старое правильное включение двух ботов в удаленную третью базу)
     # application = ApplicationBuilder().token(BOT_TOKEN).build()
     #
