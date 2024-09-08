@@ -3,6 +3,8 @@ import sqlite3
 import subprocess
 
 import logging
+from asyncio.log import logger
+
 import telegram
 
 from bot.admin_bot.helpers.calendar_helpers import generate_calendar_keyboard
@@ -40,12 +42,15 @@ async def show_calendar_to_admin(update, context, month_offset=0):
 
     try:
         # Редактируем текущее сообщение, а не отправляем новое
+        logger.info(f"Попытка редактировать сообщение с новым календарем для месяца offset: {month_offset}")
         await query.edit_message_reply_markup(reply_markup=calendar_markup)
     except telegram.error.BadRequest as e:
         # Обработка ошибки, если сообщение уже было отредактировано
         if str(e) == "Message is not modified":
+            logger.warning(f"Сообщение не изменилось. Ошибка: {str(e)}")
             pass
         else:
+            logger.error(f"Произошла ошибка при редактировании сообщения: {str(e)}")
             raise
 
     # Обработка нажатий на календарь
@@ -62,8 +67,6 @@ async def show_calendar_to_admin(update, context, month_offset=0):
     elif query.data == 'show_calendar':
          # Нажата кнопка "Показать календарь"
         await show_calendar_to_admin(update, context)
-
-
 
 async def handle_delete_client_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """
@@ -92,14 +95,19 @@ async def handle_date_selection(update: Update, context: ContextTypes.DEFAULT_TY
     query = update.callback_query
     data = query.data
 
-    if data.startswith('reserved_date_'):
-        # Дата с красным флажком, например, reserved_date_2024-09-12
-        selected_date = data.split('_')[2]
+    if data.startswith('date_'):
+        # Обычная дата, например, date_2024-09-12
+        selected_date = data.split('_')[1]
+        logging.info(f"Selected date: {selected_date}")
 
-        # Логика обработки выбранной даты
+        # Отключаем остальные кнопки и оставляем выбранную с красной точкой
+        new_reply_markup = disable_calendar_buttons(query.message.reply_markup, selected_date)
+        await query.edit_message_reply_markup(reply_markup=new_reply_markup)
+
+        # Отправляем сообщение с подтверждением
         confirmation_message = f"Вы выбрали дату {selected_date}, правильно?"
 
-        # Создаем кнопки "Да" и "Нет"
+        # Создаем клавиатуру "Да" и "Нет"
         buttons = [
             [InlineKeyboardButton("Да", callback_data="yes"),
              InlineKeyboardButton("Нет", callback_data="no")]
@@ -108,7 +116,7 @@ async def handle_date_selection(update: Update, context: ContextTypes.DEFAULT_TY
 
         # Отправляем сообщение с подтверждением и кнопками
         await query.message.reply_text(confirmation_message, reply_markup=keyboard)
-
+        await query.answer()  # Не забывайте отвечать на запросы
 
 
 async def handle_calendar_navigation(update, context):

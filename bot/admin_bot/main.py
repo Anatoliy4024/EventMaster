@@ -29,7 +29,8 @@ os.makedirs(log_dir, exist_ok=True)
 logging.basicConfig(
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
     level=logging.INFO,
-    filename=log_file
+    filename=log_file,
+    encoding='utf-8'
 )
 logger = logging.getLogger(__name__)
 
@@ -54,30 +55,33 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_data = context.user_data.get('user_data', UserData())
     context.user_data['user_data'] = user_data
 
-    options_message = None  # Инициализация переменной
+    # Инициализация переменной message по умолчанию
+    message = None
+    options_message = None  # Инициализация переменной для опций
 
     # Проверка ID пользователя
     if user_id == IRA_CHAT_ID:
-        # Вызов функции из admin_scenario.py
-        await admin_welcome_message(update)
+        # Вызов функции из admin_scenario.py, которая возвращает message и options_message
+        message, options_message = await admin_welcome_message(update)
 
     elif user_id == ADMIN_CHAT_ID:
-        # Вызов функции из service_scenario.py
-        await service_welcome_message(update)
+        # Вызов функции из service_scenario.py, которая возвращает message и options_message
+        message, options_message = await service_welcome_message(update)
 
     else:
         # Обычное приветственное сообщение для других пользователей
         message = await user_welcome_message(update, user.first_name)
 
     # Сохраняем ID сообщения с кнопками, чтобы потом их заменить
-    context.user_data['language_message_id'] = message.message_id
+    # Проверяем, была ли переменная `message` и сохраняем её ID, если она существует
+    if message:
+        context.user_data['language_message_id'] = message.message_id
 
     # Проверка и сохранение ID сообщения с опциями, если оно существует
     if options_message:
         context.user_data['options_message_id'] = options_message.message_id
 
 
-# Обработчик нажатий на кнопки
 # Обработчик нажатий на кнопки
 async def button_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
@@ -185,9 +189,9 @@ async def run_bot1():
 
     # Добавляем необходимые обработчики
     application.add_handler(CommandHandler('start', start))
-    application.add_handler(CallbackQueryHandler(button_callback))
-    application.add_handler(CallbackQueryHandler(handle_date_selection, pattern=r'^date_\d{4}-\d{2}-\d{2}$'))
 
+    application.add_handler(CallbackQueryHandler(handle_date_selection, pattern=r'^date_\d{4}-\d{2}-\d{2}$'))
+    application.add_handler(CallbackQueryHandler(button_callback))
 
     # Добавьте другие ваши обработчики здесь
 
