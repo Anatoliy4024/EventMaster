@@ -91,32 +91,42 @@ def extract_date_from_callback(callback_data):
         return None
 
 
+
 async def handle_date_selection(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
     data = query.data
 
     if data.startswith('date_'):
-        # Обычная дата, например, date_2024-09-12
+        # Извлекаем выбранную дату
         selected_date = data.split('_')[1]
-        logging.info(f"Selected date: {selected_date}")
+        logging.info(f"Selected date: {selected_date}")  # Логируем дату
+
+        # Сохраняем выбранную дату в контексте
+        context.user_data['selected_date'] = selected_date
+        logging.info(f"Context date saved: {context.user_data['selected_date']}")  # Логируем сохраненную дату
 
         # Отключаем остальные кнопки и оставляем выбранную с красной точкой
         new_reply_markup = disable_calendar_buttons(query.message.reply_markup, selected_date)
         await query.edit_message_reply_markup(reply_markup=new_reply_markup)
 
-        # Отправляем сообщение с подтверждением
-        confirmation_message = f"Вы выбрали дату {selected_date}, правильно?"
+        # Подтверждаем выбор даты
+        await query.message.reply_text(f"Вы выбрали дату {selected_date}, правильно?", reply_markup=yes_no_keyboard('ru'))
 
-        # Создаем клавиатуру "Да" и "Нет"
-        buttons = [
-            [InlineKeyboardButton("Да", callback_data="yes"),
-             InlineKeyboardButton("Нет", callback_data="no")]
-        ]
-        keyboard = InlineKeyboardMarkup(buttons)
+    elif query.data == "yes":
+        selected_date = context.user_data.get("selected_date")
+        logging.info(f"User confirmed date: {selected_date}")  # Логируем подтвержденную дату
 
-        # Отправляем сообщение с подтверждением и кнопками
-        await query.message.reply_text(confirmation_message, reply_markup=keyboard)
-        await query.answer()  # Не забывайте отвечать на запросы
+        if selected_date:
+            # Получаем user_id
+            user_id = update.effective_user.id
+            logging.info(f"User ID: {user_id}, Selected Date: {selected_date}")  # Логируем user_id и дату
+
+            # Генерируем кнопки для проформ по выбранной дате
+            selected_date = context.user_data.get("selected_date")
+            proforma_keyboard = await generate_proforma_buttons_by_date(selected_date)
+            await query.message.reply_text(f"Проформы для даты {selected_date}:", reply_markup=proforma_keyboard)
+        else:
+            await query.message.reply_text("Ошибка: выбранная дата не найдена.")
 
 
 async def handle_calendar_navigation(update, context):
@@ -136,31 +146,14 @@ async def handle_calendar_navigation(update, context):
             # Переход на следующий шаг — формирование кнопок для проформ
             await query.message.reply_text(f"Вы выбрали дату {selected_date}. Формирую проформы...")
 
-async def generate_proforma_buttons_by_date(user_id, selected_date):
-    conn = create_connection(DATABASE_PATH)
-    buttons = []
-    if conn is not None:
-        try:
-            # Извлекаем все заказы для user_id, у которых дата совпадает с выбранной датой
-            select_query = "SELECT session_number, status FROM orders WHERE user_id = ? AND selected_date = ?"
-            cursor = conn.cursor()
-            cursor.execute(select_query, (user_id, selected_date))
-            orders = cursor.fetchall()
 
-            # Генерируем кнопки для каждой проформы с номером
-            for order in orders:
-                session_number, status = order
-                proforma_number = f"{user_id}_{session_number}_{status}"
+def generate_proforma_buttons(proforma_list):
+    keyboard = []
+    for proforma in proforma_list:
+        # Формируем полный номер проформы: user_id, session_number, status
+        full_proforma_number = f"{proforma['user_id']}_{proforma['session_number']}_{proforma['status']}"
+        keyboard.append(
+            [InlineKeyboardButton(full_proforma_number, callback_data=f"proforma_{proforma['session_number']}")])
 
-                # Добавляем кнопку с номером проформы
-                buttons.append(
-                    [InlineKeyboardButton(f"Проформа {proforma_number}", callback_data=f"proforma_{proforma_number}")]
-                )
+    return InlineKeyboardMarkup(keyboard)
 
-        except sqlite3.Error as e:
-            logging.error(f"Ошибка при работе с базой данных: {e}")
-        finally:
-            conn.close()
-
-    # Возвращаем InlineKeyboardMarkup с кнопками проформ
-    return InlineKeyboardMarkup(buttons)

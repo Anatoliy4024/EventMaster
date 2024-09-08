@@ -12,7 +12,7 @@ from bot.admin_bot.scenarios.user_scenario import send_proforma_to_user, get_ful
 from bot.admin_bot.keyboards.admin_keyboards import user_options_keyboard, irina_service_menu, service_menu_keyboard
 from bot.admin_bot.scenarios.user_scenario import user_welcome_message
 from bot.admin_bot.scenarios.admin_scenario import admin_welcome_message, handle_delete_client_callback, \
-    show_calendar_to_admin, handle_date_selection
+    show_calendar_to_admin, handle_date_selection, generate_proforma_buttons_by_date
 from bot.admin_bot.scenarios.service_scenario import service_welcome_message
 
 ORDER_STATUS_REVERSE = {v: k for k, v in ORDER_STATUS.items()}
@@ -112,6 +112,22 @@ async def button_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
     elif query.data == 'delete_client':
         # Нажата кнопка "Удалить клиента"
         await handle_delete_client_callback(update, context)
+
+    if query.data == "yes":
+        selected_date = context.user_data.get("selected_date")
+        if selected_date:
+            # Генерация кнопок для проформ по выбранной дате
+            user_id = update.effective_user.id
+            proforma_keyboard = await generate_proforma_buttons_by_date(selected_date)
+            await query.message.reply_text(f"Проформы для даты {selected_date}:", reply_markup=proforma_keyboard)
+        else:
+            await query.message.reply_text("Ошибка: выбранная дата не найдена.")
+    elif query.data == "no":
+        # Возвращение в главное меню
+        await admin_welcome_message(update)
+        # или если это другой пользователь
+        # await service_welcome_message(update)
+
 
 
     # Дополнительные обработчики для других кнопок, например, смены языка и проформы:
