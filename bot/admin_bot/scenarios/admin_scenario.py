@@ -4,9 +4,7 @@ import subprocess
 
 import logging
 from asyncio.log import logger
-
 import telegram
-
 from bot.admin_bot.helpers.calendar_helpers import generate_calendar_keyboard
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import ContextTypes
@@ -14,9 +12,6 @@ from bot.admin_bot.keyboards.admin_keyboards import irina_service_menu, yes_no_k
 from shared.config import DATABASE_PATH
 from shared.helpers import create_connection
 from bot.admin_bot.helpers.calendar_helpers import disable_calendar_buttons
-
-
-
 
 
 
@@ -157,3 +152,32 @@ def generate_proforma_buttons(proforma_list):
 
     return InlineKeyboardMarkup(keyboard)
 
+
+async def generate_proforma_buttons_by_date(selected_date):
+    # Пример запроса в базу данных
+    conn = sqlite3.connect(DATABASE_PATH)
+    cursor = conn.cursor()
+
+    try:
+        # Предполагается, что вам нужно получить проформы по дате
+        cursor.execute("""
+            SELECT user_id, session_number, status
+            FROM orders
+            WHERE selected_date = ? AND status >= 3
+        """, (selected_date,))
+
+        proforma_list = cursor.fetchall()
+
+        if not proforma_list:
+            return None  # Если проформы не найдены
+
+        # Генерация кнопок для проформ
+        buttons = []
+        for proforma in proforma_list:
+            proforma_number = f"{proforma[0]}_{proforma[1]}_{proforma[2]}"
+            buttons.append([InlineKeyboardButton(proforma_number, callback_data=f"proforma_{proforma[1]}")])
+
+        return InlineKeyboardMarkup(buttons)
+
+    finally:
+        conn.close()
