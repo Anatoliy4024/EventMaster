@@ -14,20 +14,31 @@ from bot.admin_bot.keyboards.admin_keyboards import irina_service_menu, yes_no_k
 from shared.config import DATABASE_PATH
 from shared.helpers import create_connection
 from bot.admin_bot.helpers.calendar_helpers import disable_calendar_buttons
-from shared.translations import translations
+from shared.translations import translations, language_selection_keyboard
 
 
 async def admin_welcome_message(update: Update):
-    # Приветственное сообщение для Администратора
+    # Приветственное сообщение для выбора языка
     message = await update.message.reply_text(
-        "Привет, Иринушка! Я - твой АдминБот."
+        "Привет, Иринушка! Я - твой АдминБот. Выбери язык / Choose your language:",
+        reply_markup=language_selection_keyboard()
     )
-    # Отображаем меню с 3 кнопками для Ирины
-    options_message = await update.message.reply_text(
-        "Выбери действие:",
-        reply_markup=irina_service_menu()
-    )
-    return message, options_message
+    return message
+
+
+
+
+# async def admin_welcome_message(update: Update):
+#     # Приветственное сообщение для Администратора
+#     message = await update.message.reply_text(
+#         "Привет, Иринушка! Я - твой АдминБот."
+#     )
+#     # Отображаем меню с 3 кнопками для Ирины
+#     options_message = await update.message.reply_text(
+#         "Выбери действие:",
+#         reply_markup=irina_service_menu()
+#     )
+#     return message, options_message
 
 
 # Функция для показа календаря и редактирования сообщения
