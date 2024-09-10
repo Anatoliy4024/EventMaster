@@ -253,26 +253,60 @@ async def button_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
             context.user_data['delete_messages'].append(new_options_message.message_id)
 
     # Обработка кнопки для получения проформы
+
     elif query.data == 'get_proforma':
         try:
-            admin_id = IRA_CHAT_ID  # Указываем ID администратора
-            session_number = get_latest_session_number(admin_id)
+            # Получаем user_id пользователя
+            user_id = update.effective_user.id
+
+            # Получаем последний session_number для пользователя
+            session_number = get_latest_session_number(user_id)
 
             if session_number:
-                proforma_info = get_full_proforma(admin_id, session_number)
+                # Получаем полную информацию о проформе
+                proforma_info = get_full_proforma(user_id, session_number)
                 if proforma_info:
-                    proforma_message = await send_proforma_to_user(admin_id, session_number, user_data)
+                    # Отправляем проформу пользователю
+                    proforma_message = await send_proforma_to_user(user_id, session_number, user_data)
 
-                    # context.user_data['proforma_message_id'] = proforma_message.message_id
-                    context.user_data['delete_messages'].append(proforma_message.message_id)
-
+                    # Сохраняем ID сообщения с проформой
+                    context.user_data['proforma_message_id'] = proforma_message.message_id
                 else:
                     await query.message.reply_text(f"Не удалось получить данные проформы для session_number: {session_number}")
             else:
-                await query.message.reply_text(f"Не удалось найти session_number для admin_id: {admin_id}")
+                await query.message.reply_text(f"Не удалось найти session_number для user_id: {user_id}")
         except Exception as e:
-            logger.error(f"Ошибка при получении информации о проформе: {str(e)}")
-            await query.message.reply_text("Произошла ошибка при попытке получить информацию о проформе.")
+            logger.error(f"Ошибка при получении информации о пользователе: {str(e)}")
+            await query.message.reply_text("Произошла ошибка при попытке получить информацию о пользователе.")
+
+
+
+    # elif query.data == 'get_proforma':
+    #     try:
+    #         admin_id = IRA_CHAT_ID  # Указываем ID администратора
+    #         session_number = get_latest_session_number(admin_id)
+    #
+    #         if session_number:
+    #             proforma_info = get_full_proforma(admin_id, session_number)
+    #             if proforma_info:
+    #                 proforma_message = await send_proforma_to_user(admin_id, session_number, user_data)
+    #
+    #                 # context.user_data['proforma_message_id'] = proforma_message.message_id
+    #                 context.user_data['delete_messages'].append(proforma_message.message_id)
+    #
+    #             else:
+    #                 await query.message.reply_text(f"Не удалось получить данные проформы для session_number: {session_number}")
+    #         else:
+    #             await query.message.reply_text(f"Не удалось найти session_number для admin_id: {admin_id}")
+    #     except Exception as e:
+    #         logger.error(f"Ошибка при получении информации о проформе: {str(e)}")
+    #         await query.message.reply_text("Произошла ошибка при попытке получить информацию о проформе.")
+
+
+
+
+
+
 
 
 # функция для запуска из главного main EventMaster
