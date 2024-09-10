@@ -12,6 +12,7 @@ from telegram.ext import ContextTypes
 from bot.admin_bot.helpers.database_helpers import get_full_proforma
 from bot.admin_bot.keyboards.admin_keyboards import irina_service_menu, yes_no_keyboard
 from shared.config import DATABASE_PATH
+from shared.constants import UserData
 from shared.helpers import create_connection
 from bot.admin_bot.helpers.calendar_helpers import disable_calendar_buttons
 from shared.translations import translations, language_selection_keyboard
@@ -81,6 +82,11 @@ async def handle_delete_client_callback(update: Update, context: ContextTypes.DE
     Обрабатывает нажатие на кнопку 'Удалить клиента из базы данных'.
     """
     await show_calendar_to_admin(update, context)
+async def handle_find_client_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """
+    Обрабатывает нажатие на кнопку 'Удалить клиента из базы данных'.
+    """
+    await show_calendar_to_admin(update, context)
 
 
 
@@ -137,22 +143,22 @@ async def handle_date_selection(update: Update, context: ContextTypes.DEFAULT_TY
             await query.message.reply_text("Ошибка: выбранная дата не найдена.")
 
 
-async def handle_calendar_navigation(update, context):
-    query = update.callback_query
-    data = query.data
-
-    if data.startswith('date_'):
-        # Получаем дату с помощью функции
-        selected_date = extract_date_from_callback(data)
-
-        if selected_date:
-            # Отключаем все остальные кнопки и оставляем выбранную с красной точкой
-            #from bot.admin_bot.scenarios.admin_scenario import disable_calendar_buttons
-            new_reply_markup = disable_calendar_buttons(query.message.reply_markup, selected_date)
-            await query.edit_message_reply_markup(reply_markup=new_reply_markup)
-
-            # Переход на следующий шаг — формирование кнопок для проформ
-            await query.message.reply_text(f"Вы выбрали дату {selected_date}. Формирую проформы...")
+# async def handle_calendar_navigation(update, context):
+#     query = update.callback_query
+#     data = query.data
+#
+#     if data.startswith('date_'):
+#         # Получаем дату с помощью функции
+#         selected_date = extract_date_from_callback(data)
+#
+#         if selected_date:
+#             # Отключаем все остальные кнопки и оставляем выбранную с красной точкой
+#             #from bot.admin_bot.scenarios.admin_scenario import disable_calendar_buttons
+#             new_reply_markup = disable_calendar_buttons(query.message.reply_markup, selected_date)
+#             await query.edit_message_reply_markup(reply_markup=new_reply_markup)
+#
+#             # Переход на следующий шаг — формирование кнопок для проформ
+#             await query.message.reply_text(f"Вы выбрали дату {selected_date}. Формирую проформы...")
 
 
 def generate_proforma_buttons(proforma_list):
@@ -204,6 +210,8 @@ async def generate_proforma_buttons_by_date(selected_date):
 
 
 async def handle_proforma_button_click(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    user_data = context.user_data.get('user_data', UserData())
+
     query = update.callback_query
     proforma_data = query.data.split('_')
 
@@ -234,7 +242,37 @@ async def handle_proforma_button_click(update: Update, context: ContextTypes.DEF
                     f"Статус: {proforma_info[10]}"
                 )
                 await query.message.reply_text(full_proforma_text)
+                if user_data.get_step() == "delete_client":
+                    user_data.set_step(f"delete_client_{proforma_info[11]}")
+                    await query.message.reply_text(f"удалить эту запись?",
+                                                   reply_markup=yes_no_keyboard('ru'))
+
+                #     формируем кнопки
             else:
                 await query.message.reply_text("Проформа не найдена.")
         except Exception as e:
             await query.message.reply_text(f"Произошла ошибка при получении проформы: {str(e)}")
+
+def null_status(order_id):
+    # Создаем подключение к базе данных
+    conn = sqlite3.connect(DATABASE_PATH)
+    cursor = conn.cursor()
+
+    try:
+        # Обновляем статус ордера
+        logging.info(f"Updating order status for order_id: {order_id}")
+        cursor.execute("UPDATE orders SET status = 0 WHERE order_id = ?",
+                       (order_id,))
+        conn.commit()
+
+        logging.info(f"Order status updated for order_id: {order_id}")
+
+
+    except Exception as e:
+        logging.error(f"Failed to send order info to admin bot: {e}")
+        print(f"Принт: Ошибка при отправке сообщения: {e}")
+
+    finally:
+        conn.close()
+        logging.info(f"Database connection closed for order_id: {order_id}")
+

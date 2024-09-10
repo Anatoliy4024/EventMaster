@@ -12,7 +12,8 @@ from bot.admin_bot.scenarios.user_scenario import send_proforma_to_user, get_ful
 from bot.admin_bot.keyboards.admin_keyboards import user_options_keyboard, irina_service_menu, service_menu_keyboard
 from bot.admin_bot.scenarios.user_scenario import user_welcome_message
 from bot.admin_bot.scenarios.admin_scenario import admin_welcome_message, handle_delete_client_callback, \
-    show_calendar_to_admin, handle_date_selection, generate_proforma_buttons_by_date, handle_proforma_button_click
+    show_calendar_to_admin, handle_date_selection, generate_proforma_buttons_by_date, handle_proforma_button_click, \
+    handle_find_client_callback, null_status
 from bot.admin_bot.scenarios.service_scenario import service_welcome_message
 from shared.translations import language_selection_keyboard
 
@@ -98,12 +99,22 @@ async def button_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
     elif query.data == 'show_calendar':
         await show_calendar_to_admin(update, context)
 
+    elif query.data == 'find_and_view_order':
+        user_data.set_step('find_and_view_order')
+        await handle_find_client_callback(update, context)
+
     elif query.data == 'delete_client':
+        user_data.set_step('delete_client')
         await handle_delete_client_callback(update, context)
 
     elif query.data == "yes":
         selected_date = context.user_data.get("selected_date")
-        if selected_date:
+        if user_data.get_step().startswith("delete_client_"):
+            print(user_data.get_step())
+            order_id = user_data.get_step().split("_")[-1]
+            print(order_id)
+            null_status(order_id)
+        elif selected_date:
             # Генерация кнопок для проформ по выбранной дате
             admin_id = IRA_CHAT_ID  # Указываем ID администратора
             proforma_keyboard = await generate_proforma_buttons_by_date(selected_date)
