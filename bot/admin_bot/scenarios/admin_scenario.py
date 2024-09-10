@@ -124,7 +124,9 @@ async def handle_date_selection(update: Update, context: ContextTypes.DEFAULT_TY
         await query.edit_message_reply_markup(reply_markup=new_reply_markup)
 
         # Подтверждаем выбор даты
-        await query.message.reply_text(f"Вы выбрали дату {selected_date}, правильно?", reply_markup=yes_no_keyboard('ru'))
+        message = await query.message.reply_text(f"Вы выбрали дату {selected_date}, правильно?", reply_markup=yes_no_keyboard('ru'))
+
+        context.user_data['delete_messages'].append(message.message_id)
 
     elif query.data == "yes":
         selected_date = context.user_data.get("selected_date")
@@ -138,7 +140,9 @@ async def handle_date_selection(update: Update, context: ContextTypes.DEFAULT_TY
             # Генерируем кнопки для проформ по выбранной дате
             selected_date = context.user_data.get("selected_date")
             proforma_keyboard = await generate_proforma_buttons_by_date(selected_date)
-            await query.message.reply_text(f"Проформы для даты {selected_date}:", reply_markup=proforma_keyboard)
+            message = await query.message.reply_text(f"Проформы для даты {selected_date}:", reply_markup=proforma_keyboard)
+            context.user_data['delete_messages'].append(message.message_id)
+
         else:
             await query.message.reply_text("Ошибка: выбранная дата не найдена.")
 
@@ -241,17 +245,25 @@ async def handle_proforma_button_click(update: Update, context: ContextTypes.DEF
                     f"Стоимость: {proforma_info[8]} евро\n"
                     f"Статус: {proforma_info[10]}"
                 )
-                await query.message.reply_text(full_proforma_text)
+                message = await query.message.reply_text(full_proforma_text)
+                context.user_data['delete_messages'].append(message.message_id)
+
                 if user_data.get_step() == "delete_client":
                     user_data.set_step(f"delete_client_{proforma_info[11]}")
-                    await query.message.reply_text(f"удалить эту запись?",
+                    message = await query.message.reply_text(f"удалить эту запись?",
                                                    reply_markup=yes_no_keyboard('ru'))
+                    context.user_data['delete_messages'].append(message.message_id)
+
 
                 #     формируем кнопки
             else:
-                await query.message.reply_text("Проформа не найдена.")
+                message = await query.message.reply_text("Проформа не найдена.")
+                context.user_data['delete_messages'].append(message.message_id)
+
         except Exception as e:
-            await query.message.reply_text(f"Произошла ошибка при получении проформы: {str(e)}")
+            message = await query.message.reply_text(f"Произошла ошибка при получении проформы: {str(e)}")
+            context.user_data['delete_messages'].append(message.message_id)
+
 
 def null_status(order_id):
     # Создаем подключение к базе данных

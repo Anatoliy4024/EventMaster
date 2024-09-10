@@ -55,6 +55,7 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user = update.message.from_user
     user_id = user.id  # Получаем user_id пользователя
     user_data = context.user_data.get('user_data', UserData())
+    context.user_data["delete_messages"] = list()
     context.user_data['user_data'] = user_data
 
     # Инициализация переменной message по умолчанию
@@ -110,23 +111,100 @@ async def button_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
     elif query.data == "yes":
         selected_date = context.user_data.get("selected_date")
         if user_data.get_step().startswith("delete_client_"):
-            print(user_data.get_step())
             order_id = user_data.get_step().split("_")[-1]
-            print(order_id)
             null_status(order_id)
+
+            # Удаляем предыдущие сообщения с опциями и проформой
+            del_message_id = context.user_data.get("delete_messages")
+            if del_message_id:
+
+                for i in del_message_id:
+                    try:
+                        await context.bot.delete_message(chat_id=query.message.chat_id, message_id=i)
+                    except Exception as e:
+                        logger.error(f"Error deleting options message: {e}")
+
+            # Если это администратор, переключаем на админ-меню
+            if update.effective_user.id == IRA_CHAT_ID:
+                options_message = await query.message.reply_text(
+                    "Выбери действие:",
+                    reply_markup=irina_service_menu()
+                )
+                # context.user_data['options_message_id'] = options_message.message_id
+                context.user_data['delete_messages'].append(options_message.message_id)
+            else:
+                # Для других пользователей остается логика стандартного меню юзера
+                headers = {
+                    'en': "Choose",
+                    'ru': "Выбери",
+                    'es': "Elige",
+                    'fr': "Choisissez",
+                    'uk': "Виберіть",
+                    'pl': "Wybierz",
+                    'de': "Wählen",
+                    'it': "Scegli"
+                }
+
+                new_options_message = await query.message.reply_text(
+                    headers.get(user_data.get_language(), "Choose"),
+                    reply_markup=user_options_keyboard(user_data.get_language(), update.effective_user.id)
+                )
+
+                # context.user_data['options_message_id'] = new_options_message.message_id
+                context.user_data['delete_messages'].append(new_options_message.message_id)
+
+
         elif selected_date:
             # Генерация кнопок для проформ по выбранной дате
             admin_id = IRA_CHAT_ID  # Указываем ID администратора
             proforma_keyboard = await generate_proforma_buttons_by_date(selected_date)
-            await context.bot.send_message(
+            message = await context.bot.send_message(
                 chat_id=admin_id,
                 text=f"Проформы для даты {selected_date}:",
                 reply_markup=proforma_keyboard
             )
-        else:
-            await query.message.reply_text("Ошибка: выбранная дата не найдена.")
+            context.user_data['delete_messages'].append(message.message_id)
 
+        else:
+            message = await query.message.reply_text("Ошибка: выбранная дата не найдена.")
+            context.user_data['delete_messages'].append(message.message_id)
     elif query.data == "no":
+        # Удаляем предыдущие сообщения с календарем и подтверждением даты
+        del_message_id = context.user_data.get("delete_messages")
+        if del_message_id:
+            for i in del_message_id:
+                try:
+                    await context.bot.delete_message(chat_id=query.message.chat_id, message_id=i)
+                except Exception as e:
+                    logger.error(f"Error deleting message: {e}")
+
+        # Если это администратор, переключаем на админ-меню
+        if update.effective_user.id == IRA_CHAT_ID:
+            options_message = await query.message.reply_text(
+                "Выбери действие:",
+                reply_markup=irina_service_menu()
+            )
+            context.user_data['delete_messages'] = [options_message.message_id]  # Сохраняем ID сообщения
+
+        else:
+            # Логика для других пользователей
+            headers = {
+                'en': "Choose",
+                'ru': "Выбери",
+                'es': "Elige",
+                'fr': "Choisissez",
+                'uk': "Виберіть",
+                'pl': "Wybierz",
+                'de': "Wählen",
+                'it': "Scegli"
+            }
+
+            new_options_message = await query.message.reply_text(
+                headers.get(user_data.get_language(), "Choose"),
+                reply_markup=user_options_keyboard(user_data.get_language(), update.effective_user.id)
+            )
+            context.user_data['delete_messages'] = [new_options_message.message_id]
+
         # Возвращение в главное меню администратора
         await admin_welcome_message(update)
 
@@ -136,20 +214,14 @@ async def button_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
         user_data.set_language(language_code)
 
         # Удаляем предыдущие сообщения с опциями и проформой
-        options_message_id = context.user_data.get('options_message_id')
-        proforma_message_id = context.user_data.get('proforma_message_id')
+        del_message_id = context.user_data.get("delete_messages")
+        if del_message_id:
 
-        if options_message_id:
-            try:
-                await context.bot.delete_message(chat_id=query.message.chat_id, message_id=options_message_id)
-            except Exception as e:
-                logger.error(f"Error deleting options message: {e}")
-
-        if proforma_message_id:
-            try:
-                await context.bot.delete_message(chat_id=query.message.chat_id, message_id=proforma_message_id)
-            except Exception as e:
-                logger.error(f"Error deleting proforma message: {e}")
+            for i in del_message_id:
+                try:
+                    await context.bot.delete_message(chat_id=query.message.chat_id, message_id=i)
+                except Exception as e:
+                    logger.error(f"Error deleting options message: {e}")
 
         # Если это администратор, переключаем на админ-меню
         if update.effective_user.id == IRA_CHAT_ID:
@@ -157,7 +229,8 @@ async def button_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 "Выбери действие:",
                 reply_markup=irina_service_menu()
             )
-            context.user_data['options_message_id'] = options_message.message_id
+            # context.user_data['options_message_id'] = options_message.message_id
+            context.user_data['delete_messages'].append(options_message.message_id)
         else:
             # Для других пользователей остается логика стандартного меню юзера
             headers = {
@@ -176,7 +249,8 @@ async def button_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 reply_markup=user_options_keyboard(language_code, update.effective_user.id)
             )
 
-            context.user_data['options_message_id'] = new_options_message.message_id
+            # context.user_data['options_message_id'] = new_options_message.message_id
+            context.user_data['delete_messages'].append(new_options_message.message_id)
 
     # Обработка кнопки для получения проформы
     elif query.data == 'get_proforma':
@@ -189,7 +263,9 @@ async def button_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 if proforma_info:
                     proforma_message = await send_proforma_to_user(admin_id, session_number, user_data)
 
-                    context.user_data['proforma_message_id'] = proforma_message.message_id
+                    # context.user_data['proforma_message_id'] = proforma_message.message_id
+                    context.user_data['delete_messages'].append(proforma_message.message_id)
+
                 else:
                     await query.message.reply_text(f"Не удалось получить данные проформы для session_number: {session_number}")
             else:
@@ -197,124 +273,6 @@ async def button_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
         except Exception as e:
             logger.error(f"Ошибка при получении информации о проформе: {str(e)}")
             await query.message.reply_text("Произошла ошибка при попытке получить информацию о проформе.")
-
-
-
-
-# Обработчик нажатий на кнопки
-# async def button_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
-#     query = update.callback_query
-#     await query.answer()
-#
-#     if query.data == 'inactive_button':
-#         # Эта кнопка неактивна, ничего не делаем
-#         return
-#
-#     user_data = context.user_data.get('user_data', UserData())
-#     context.user_data['user_data'] = user_data
-#
-#     # Обработка нажатий на календарь
-#     if query.data.startswith('prev_month_'):
-#         # Извлекаем смещение месяца для предыдущего месяца
-#         month_offset = int(query.data.split('_')[2])  # Извлекаем корректную часть callback_data
-#         await show_calendar_to_admin(update, context, month_offset)
-#
-#     elif query.data.startswith('next_month_'):
-#         # Извлекаем смещение месяца для следующего месяца
-#         month_offset = int(query.data.split('_')[2])  # Извлекаем корректную часть callback_data
-#         await show_calendar_to_admin(update, context, month_offset)
-#
-#     elif query.data == 'show_calendar':
-#         # Нажата кнопка "Показать календарь"
-#         await show_calendar_to_admin(update, context)
-#
-#     elif query.data == 'delete_client':
-#         # Нажата кнопка "Удалить клиента"
-#         await handle_delete_client_callback(update, context)
-#
-#     if query.data == "yes":
-#         selected_date = context.user_data.get("selected_date")
-#         if selected_date:
-#             # Генерация кнопок для проформ по выбранной дате
-#             user_id = update.effective_user.id
-#             proforma_keyboard = await generate_proforma_buttons_by_date(selected_date)
-#             await query.message.reply_text(f"Проформы для даты {selected_date}:", reply_markup=proforma_keyboard)
-#         else:
-#             await query.message.reply_text("Ошибка: выбранная дата не найдена.")
-#     elif query.data == "no":
-#         # Возвращение в главное меню
-#         await admin_welcome_message(update)
-#         # или если это другой пользователь
-#         # await service_welcome_message(update)
-#
-#
-#
-#     # Дополнительные обработчики для других кнопок, например, смены языка и проформы:
-#     elif query.data.startswith('lang_'):
-#         language_code = query.data.split('_')[1]
-#         user_data.set_language(language_code)
-#
-#         # Удаляем предыдущие сообщения с опциями и проформой
-#         options_message_id = context.user_data.get('options_message_id')
-#         proforma_message_id = context.user_data.get('proforma_message_id')
-#
-#         if options_message_id:
-#             try:
-#                 await context.bot.delete_message(chat_id=query.message.chat_id, message_id=options_message_id)
-#             except Exception as e:
-#                 logger.error(f"Error deleting options message: {e}")
-#
-#         if proforma_message_id:
-#             try:
-#                 await context.bot.delete_message(chat_id=query.message.chat_id, message_id=proforma_message_id)
-#             except Exception as e:
-#                 logger.error(f"Error deleting proforma message: {e}")
-#
-#         # Отправляем новые кнопки в соответствии с выбранным языком и заголовок
-#         headers = {
-#             'en': "Choose",
-#             'ru': "Выбери",
-#             'es': "Elige",
-#             'fr': "Choisissez",
-#             'uk': "Виберіть",
-#             'pl': "Wybierz",
-#             'de': "Wählen",
-#             'it': "Scegli"
-#         }
-#
-#         user_id = update.effective_user.id  # Получаем user_id пользователя
-#         new_options_message = await query.message.reply_text(
-#             headers.get(language_code, "Choose"),
-#             reply_markup=user_options_keyboard(language_code, user_id)
-#         )
-#
-#         # Обновляем ID сообщения с новыми опциями
-#         context.user_data['options_message_id'] = new_options_message.message_id
-#
-#     elif query.data == 'get_proforma':
-#         try:
-#             # Получаем user_id пользователя
-#             user_id = update.effective_user.id
-#
-#             # Получаем последний session_number для пользователя
-#             session_number = get_latest_session_number(user_id)
-#
-#             if session_number:
-#                 # Получаем полную информацию о проформе
-#                 proforma_info = get_full_proforma(user_id, session_number)
-#                 if proforma_info:
-#                     # Отправляем проформу пользователю
-#                     proforma_message = await send_proforma_to_user(user_id, session_number, user_data)
-#
-#                     # Сохраняем ID сообщения с проформой
-#                     context.user_data['proforma_message_id'] = proforma_message.message_id
-#                 else:
-#                     await query.message.reply_text(f"Не удалось получить данные проформы для session_number: {session_number}")
-#             else:
-#                 await query.message.reply_text(f"Не удалось найти session_number для user_id: {user_id}")
-#         except Exception as e:
-#             logger.error(f"Ошибка при получении информации о пользователе: {str(e)}")
-#             await query.message.reply_text("Произошла ошибка при попытке получить информацию о пользователе.")
 
 
 # функция для запуска из главного main EventMaster
