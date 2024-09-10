@@ -49,8 +49,32 @@ def get_user_info_by_user_id(user_id):
     conn.close()
     return user_info
 
-# Обработчик команды /start
+# Функция для получения по user_id в таблице users - статуса: админ - status = 1, сервисная служба - status = 2
+def get_user_status(user_id):
+    try:
+        # Подключаемся к базе данных
+        conn = sqlite3.connect(DATABASE_PATH)
+        cursor = conn.cursor()
 
+        # Выполняем SQL-запрос для получения статуса пользователя
+        cursor.execute("SELECT status FROM users WHERE user_id = ?", (user_id,))
+        result = cursor.fetchone()
+
+        if result:
+            return result[0]  # Возвращаем статус пользователя
+        else:
+            return None  # Если пользователь не найден
+
+    except sqlite3.Error as e:
+        print(f"Ошибка при получении статуса: {e}")
+        return None
+
+    finally:
+        if conn:
+            conn.close()
+
+
+# Обработчик команды /start
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user = update.message.from_user
     user_id = user.id  # Получаем user_id пользователя
@@ -61,16 +85,37 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     # Инициализация переменной message по умолчанию
     message = None
 
-    # Проверка ID пользователя
-    if user_id == IRA_CHAT_ID:
-        # Вызываем функцию для выбора языка и меню администратора
+    # # Проверка ID пользователя
+    # if user_id == IRA_CHAT_ID:
+    #     # Вызываем функцию для выбора языка и меню администратора
+    #     message = await admin_welcome_message(update)
+    # elif user_id == ADMIN_CHAT_ID:
+    #     # Вызов функции для другого администратора
+    #     message = await service_welcome_message(update)
+    # else:
+    #     # Обычное приветственное сообщение для других пользователей
+    #     message = await user_welcome_message(update, user.first_name)
+
+    # Получаем статус пользователя из базы данных
+    status = get_user_status(user_id)
+
+    if status is None:
+        # Если пользователь не найден в базе данных
+        await update.message.reply_text("Вы не зарегистрированы в системе.")
+        return
+
+    # Проверка статуса пользователя
+    if status == 1:
+        # Пользователь является админом
         message = await admin_welcome_message(update)
-    elif user_id == ADMIN_CHAT_ID:
-        # Вызов функции для другого администратора
-        message, _ = await service_welcome_message(update)
+    elif status == 2:
+        # Пользователь является сервисным сотрудником
+        message = await service_welcome_message(update)
     else:
-        # Обычное приветственное сообщение для других пользователей
+        # Обычный пользователь
         message = await user_welcome_message(update, user.first_name)
+
+
 
     # Сохраняем ID сообщения с кнопками
     if message:

@@ -21,7 +21,7 @@ from shared.translations import translations, language_selection_keyboard
 async def admin_welcome_message(update: Update):
     # Приветственное сообщение для выбора языка
     message = await update.message.reply_text(
-        "Привет, Иринушка! Я - твой АдминБот. Выбери язык / Choose your language:",
+        "Привет, администратор! Я - твой АдминБот. Выбери язык / Choose your language:",
         reply_markup=language_selection_keyboard()
     )
     return message
@@ -89,21 +89,20 @@ async def handle_find_client_callback(update: Update, context: ContextTypes.DEFA
     await show_calendar_to_admin(update, context)
 
 
-
-def extract_date_from_callback(callback_data):
-    """
-    Функция для извлечения даты из callback_data кнопки с красным флажком или без.
-    Ожидаемые форматы:
-    - 'date_YYYY-MM-DD'
-    - 'reserved_date_YYYY-MM-DD'
-    """
-    if callback_data.startswith('date_'):
-        return callback_data.split('_')[1]
-    elif callback_data.startswith('reserved_date_'):
-        return callback_data.split('_')[2]
-    else:
-        return None
-
+# def extract_date_from_callback(callback_data):
+#     """
+#     Функция для извлечения даты из callback_data кнопки с красным флажком или без.
+#     Ожидаемые форматы:
+#     - 'date_YYYY-MM-DD'
+#     - 'reserved_date_YYYY-MM-DD'
+#     """
+#     if callback_data.startswith('date_'):
+#         return callback_data.split('_')[1]
+#     elif callback_data.startswith('reserved_date_'):
+#         return callback_data.split('_')[2]
+#     else:
+#         return None
+#
 
 
 async def handle_date_selection(update: Update, context: ContextTypes.DEFAULT_TYPE):
